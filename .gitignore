@@ -1,0 +1,43 @@
+# OS & Editor
+.DS_Sotre
+Thums.db
+.vscode/
+.idea/
+
+# Shared Memory & Native Builds
+*.o
+*.so
+*.a
+*.dylib
+
+# Go
+/src/ingester/ingester
+/src/ingester/vendor/
+
+# .NET / C#
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Node.js / React
+node_modules/
+/src/web/dist/
+/src/web/build/
+.env.local
+
+# R
+.Rproj.user/
+.Rhistory
+.Rdata
+.Ruserdata
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+# Database & Logs
+*.log
+
