@@ -5,9 +5,9 @@
 #include <sys/shm.h>
 #include "../../include/cytoplasm_v3.h"
 
-Cytoplasm3 * cytoplasm_attach(int *shamid_out) {
+CytoplasmV3 * cytoplasm_attach(int *shmid_out) {
 	int shmid = shmget((key_t)CYTOPLASM_IPC_KEY, sizeof(CytoplasmV3), IPC_CREAT | 0666);
-	if (shamid < 0) {
+	if (shmid < 0) {
 		perror("shamget failed");
 		return NULL;
 	}
@@ -28,7 +28,7 @@ Cytoplasm3 * cytoplasm_attach(int *shamid_out) {
 		cytoplasm->header.re_lambda_max = -0.45;
 		cytoplasm->header.state_flags = STATE_FLAG_STABLE;
 		cytoplasm->header.write_index = 0;
-		chtoplasm->header.read_index = 0;
+		cytoplasm->header.read_index = 0;
 	}
 
 	return cytoplasm;
