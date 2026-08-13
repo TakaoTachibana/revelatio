@@ -55,7 +55,7 @@ typedef struct {
 	uint32_t state_flags;
 	uint32_t vector_count;
 	uint64_t last_updated_epoch;
-	uint8_t reserved[72];
+	uint8_t reserved[80];
 } HeaderSection;
 
 /* ==========================================
@@ -71,7 +71,7 @@ typedef struct {
 	double tda_h1_persistence;
 	uint64_t fit_timestamp;
 	uint8_t reserved[72];
-} CoeffecientSection;
+} CoefficientSection;
 
 /* =============================================================
  * 3. Text Slot Struct (19,200 Bytes per Slot)
@@ -115,15 +115,26 @@ typedef struct {
 
 typedef struct {
 	HeaderSection header;
-	CoeffecientSection coefficients;
+	CoefficientSection coefficients;
 	ParticleOutputArea particle_output;
-	uint8_t reserved_meta[15872];
+	uint8_t reserved_meta[15796];
 
-	VectorSlot vectors[VECTOR_RIG_CAPACITY];
+	VectorSlot vectors[VECTOR_RING_CAPACITY];
 	TextSlot text_lru[TEXT_LRU_CAPACITY];
 } CytoplasmV3;
 
 #pragma pack(pop)
+
+/* C Function Prototypes for CGO Linkage */
+CytoplasmV3* cytoplasm_attach(int *shmid_out);
+int cytoplasm_detach(CytoplasmV3 *cytoplasm);
+
+/* C / C++ Static Assert Compatibility Macro */
+#ifdef __cplusplus
+	#ifndef _Static_assert
+		#define _Static_assert static_assert
+	#endif
+#endif
 
 /* Memory Offset Verification Macros */
 _Static_assert(sizeof(HeaderSection) == 128, "HeaderSection size must be 128 bytes");
@@ -135,3 +146,4 @@ _Static_assert(offsetof(CytoplasmV3, vectors) == 0x4000, "Vector ring offset mus
 #endif
 
 #endif /* CYTOPLASM_V3_H */
+
