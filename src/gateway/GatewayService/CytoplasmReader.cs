@@ -67,6 +67,11 @@ public unsafe class CytoplasmReader : IDisposable {
 
 		byte* basePtr = (byte*)_shmPtr;
 		ParticleOutputArea* particleArea = (ParticleOutputArea*)(basePtr + PARTICLE_OUTPUT_OFFSET);
+
+		if (particleArea->CalculatedAtNs == 0 || particleArea->TriggerCount == 0) {
+			return posts;
+		}
+
 		uint count = Math.Min(particleArea->TriggerCount, 16U);
 		byte* textLruBase = basePtr + TEXT_LRU_OFFSET;
 
@@ -78,6 +83,11 @@ public unsafe class CytoplasmReader : IDisposable {
 			string author = ReadUtf8String(slotPtr + 16 + TEXT_URI_MAX_LEN, TEXT_AUTHOR_MAX_LEN);
 			string text = ReadUtf8String(slotPtr + 16 + TEXT_URI_MAX_LEN + TEXT_AUTHOR_MAX_LEN, TEXT_BODY_MAX_LEN);
 
+			if (string.IsNullOrWhiteSpace(author) && string.IsNullOrWhiteSpace(text)) {
+				continue;
+			}
+
+
 			posts.Add(new TriggerPostDto(slotIdx, uri, author, text, particleArea->Scores[i]));
 		}
 		return posts;
@@ -88,7 +98,12 @@ public unsafe class CytoplasmReader : IDisposable {
 		while (len < maxLen && ptr[len] != 0) {
 			len++;
 		}
-		return len == 0 ? string.Empty : Encoding.UTF8.GetString(ptr, len);
+		if (len == 0) {
+			return string.Empty;
+		}
+
+		string result = Encoding.UTF8.GetString(ptr, len);
+		return result.TrimEnd('\0', ' ', '\r', '\n', '\t');
 	}
 
 	public void Dispose() {

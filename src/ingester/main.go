@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 )
@@ -32,7 +33,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	log.Println("[REVELATIO] Ingester] Connected successfully. Streaming records into Cytoplasm III...")
+	log.Println("[REVELATIO Ingester] Connected successfully. Streaming records into Cytoplasm III...")
 
 	done := make(chan struct{})
 
@@ -60,20 +61,23 @@ func main() {
 				action = event.Commit.Operation
 			}
 
-			if (action == "create" || action == "")  && event.Commit.Collection == "app.bsky.feed.post" {
+			if (action == "create" || action == "") && event.Commit.Collection == "app.bsky.feed.post" {
 				text := event.Commit.Record.Text
 				if len(text) == 0 {
 					continue
 				}
 
+				// 【文字化け対策】2048バイト以内で UTF-8 マルチバイト（日本語・絵文字）の途切れを防止
+				safeText := safeTruncateUTF8(text, 2048)
+
 				uri := BuildATURI(event.Did, event.Commit.Collection, event.Commit.RKey)
 				author := event.Did
-				vector := ExtractFeatureVector(text)
+				vector := ExtractFeatureVector(safeText)
 
-				slotIdx := shmWriter.WritePost(uri, author, text, vector)
+				slotIdx := shmWriter.WritePost(uri, author, safeText, vector)
 				processedCount++
 
-				if processedCount == 1 || processedCount % 100 == 0 {
+				if processedCount == 1 || processedCount%100 == 0 {
 					log.Printf("[REVELATIO Ingester] Processed %d posts (Row Msgs: %d) | Latest Slot: %d | URI: %s", processedCount, rawMsgCount, slotIdx, uri)
 				}
 			}
@@ -81,17 +85,26 @@ func main() {
 	}()
 
 	select {
-	case <- interrupt:
-		log.Println("[REVELATIO Ingester] Interruput received. Terminating stream ingestion...")
+	case <-interrupt:
+		log.Println("[REVELATIO Ingester] Interrupt received. Terminating stream ingestion...")
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 		select {
-		case <- done:
-		case <- time.After(time.Second):
+		case <-done:
+		case <-time.After(time.Second):
 		}
-	case <- done:
+	case <-done:
 	}
 
 	log.Println("[REVELATIO Ingester] Shutdown complete.")
 }
 
-
+// UTF-8 の文字（Rune）境界を壊さずに maxBytes 以内に収める関数
+func safeTruncateUTF8(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	for maxBytes > 0 && !utf8.RuneStart(s[maxBytes]) {
+		maxBytes--
+	}
+	return s[:maxBytes]
+}

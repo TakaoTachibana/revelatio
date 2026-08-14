@@ -34,8 +34,11 @@ func NewSharedMemoryWriter() (*SharedMemoryWriter, error) {
 func (w *SharedMemoryWriter) WritePost(uri, author, text string, vector [128]float32) uint64 {
 	nowNs := uint64(time.Now().UnixNano())
 
+
+
 	// 1. Atomic Index Increment
-	writeIdx := atomic.AddUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.write_index)), 1) - 1
+	atomic.AddUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.sequence_lock)), 1)
+	writeIdx := atomic.LoadUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.write_index)))
 
 	// 2. Vector Ring Buffer Slot Write (~64MB Zone)
 	vSlotIdx := writeIdx % C.VECTOR_RING_CAPACITY
@@ -58,6 +61,8 @@ func (w *SharedMemoryWriter) WritePost(uri, author, text string, vector [128]flo
 	copyCString(unsafe.Pointer(&tSlot.text[0]), text, C.TEXT_BODY_MAX_LEN)
 
 	atomic.StoreUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.last_updated_epoch)), nowNs)
+	atomic.StoreUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.write_index)), writeIdx + 1)
+	atomic.AddUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.sequence_lock)), 1)
 
 	return writeIdx
 }

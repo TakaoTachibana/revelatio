@@ -28,18 +28,22 @@ var connectedClients = new ConcurrentDictionary<string, WebSocket>();
 var cytoplasmReader = app.Services.GetRequiredService<CytoplasmReader>();
 
 // Julia / R Autopoietic Loop Notification Endpoint
-app.MapPost("/api/v1/topoloty/event", async (HttpContext ctx) => {
+app.MapPost("/api/v1/topology/event", async (HttpContext ctx) => {
 	using var reader = new StreamReader(ctx.Request.Body);
 	var jsonBody = await reader.ReadToEndAsync();
 
 	// Read Top Trigger Posts from Shared Memory (Zero-Copy)
 	var triggerPosts = cytoplasmReader.ReadTopTriggerPosts();
 
+	var jsonOptions = new JsonSerializerOptions {
+		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+	};
+
 	var broadcastPayload = JsonSerializer.Serialize(new {
 		type = "AUTOPOIETIC_EVENT",
 		payload = JsonSerializer.Deserialize<JsonElement>(string.IsNullOrWhiteSpace(jsonBody) ? "{}" : jsonBody),
 		triggerPosts = triggerPosts
-	});
+	}, jsonOptions);
 
 	var buffer = Encoding.UTF8.GetBytes(broadcastPayload);
 	var deadClients = new List<string>();
@@ -67,15 +71,17 @@ app.Map("/ws", async (HttpContext context) => {
 		connectedClients.TryAdd(clientId, webSocket);
 
 		var buffer = new byte[4096];
-		while (webSocket.State == WebSocketState.Open) {
-			var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-			if (result.MessageType == WebSocketMessageType.Close) {
-				await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-				connectedClients.TryRemove(clientId, out _);
+		try {
+			while (webSocket.State == WebSocketState.Open) {
+				var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+				if (result.MessageType == WebSocketMessageType.Close) {
+					await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+					break;
+				}
 			}
+		} catch (WebSocketException) {
+		} catch (OperationCanceledException) {
 		}
-	} else {
-		context.Response.StatusCode = StatusCodes.Status400BadRequest;
 	}
 });
 

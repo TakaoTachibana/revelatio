@@ -1,0 +1,80 @@
+.pde-overlay-container {
+	position: absolute;
+	top: 10px;
+	left: 20px;
+	z-index: 10;
+	background: rgba(10, 15, 25, 0.85);
+	backdrop-filter: blur(12px);
+	border: 1px solid #10b981;
+	border-radius: 12px;
+	padding: 20px 28px;
+	color: #f8fafc;
+	font-family: monospace;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+	max-width: 520px;
+	transition: border-color 0.3s ease;
+}
+
+.pde-overlay-container.critical {
+	border-color: #ef4444;
+}
+
+.pde-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.pde-title {
+	font-size: 12px;
+	letter-spacing: 0.1em;
+	color: #94a3b8;
+}
+
+.pde-status-badge {
+	font-size: 11px;
+	padding: 2px 8px;
+	border-radius: 4px;
+}
+
+.pde-status-badge.linked {
+	background: #065f46;
+	color: #34d399;
+}
+
+.pde-status-badge.offline {
+	background: #7f1d1d;
+	color: #fca5a5;
+}
+
+.pde-equation-box {
+	font-size: 18px;
+	margin: 16px 0;
+	min-height: 40px;
+}
+
+.pde-waiting {
+	color: #64748b;
+	font-size: 14px;
+}
+
+.pde-metric-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+	font-size: 12px;
+	color: #cbd5e1;
+	border-top: 1px solid #334155;
+	padding-top: 12px;
+}
+
+.metric-value-stable {
+	color: #34d399;
+}
+
+.metric-value-critical {
+	color: #f87171;
+}
+
+
