@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 	"unicode/utf8"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -69,6 +70,11 @@ func main() {
 
 				// 【文字化け対策】2048バイト以内で UTF-8 マルチバイト（日本語・絵文字）の途切れを防止
 				safeText := safeTruncateUTF8(text, 2048)
+				cleanText := sanitizeText(safeText)
+
+				if len(cleanText) == 0 {
+					continue
+				}
 
 				uri := BuildATURI(event.Did, event.Commit.Collection, event.Commit.RKey)
 				author := event.Did
@@ -107,4 +113,20 @@ func safeTruncateUTF8(s string, maxBytes int) string {
 		maxBytes--
 	}
 	return s[:maxBytes]
+}
+
+// 制御文字（0x00〜0x1F, 0x7Fなど）やバイナリノイズを除去し、
+// 表示可能なテキスト・改行・タブのみを抽出する関数
+func sanitizeText(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+
+	for _, r := range s {
+		// 表示可能文字（0x20以上かつDEL文字0x7F以外）、または改行(\n)・復帰(\r)・タブ(\t)のみを保持
+		if (r >= 0x20 && r != 0x7F) || r == '\n' || r == '\r' || r == '\t' {
+			b.WriteRune(r)
+		}
+	}
+
+	return strings.TrimSpace(b.String())
 }

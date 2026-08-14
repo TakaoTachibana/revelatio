@@ -60,7 +60,8 @@ main <- function() {
 			}
 
 			# 3. Fast Kronecker Coupling Spectrum Calculation
-			A_k <- cov(res_data$features[1:20, 1:4])
+			n_samples <- nrow(res_data$features)
+			A_k <- cov(res_data$features[(n_samples - 19):n_samples, 1:4])
 			A_k <- A_k / (norm(A_k, "F") + 1e-6)
 			csd_res <- compute_fast_coupling_spectrum_cpp(L, A_k)
 
@@ -80,10 +81,15 @@ main <- function() {
 			# Extract Trigger Slot Indices for Particle Attribution
 			trigger_slots <- integer(0)
 			scores <- numeric(0)
-			if (tda_res$disruption || csd_res$csd_critical) {
+			if (TRUE) {
 				# Select top slots from window
-				trigger_slots <- as.integer((current_write_idx - 16):(current_write_idx - 1) %% 10000)
-				scores <- rep(tda_res$max_persistence, length(trigger_slots))
+				slot_range <- (current_write_idx - 16):(current_write_idx - 1)
+				trigger_slots <- as.integer(slot_range %% 1000)
+
+				raw_scores <- res_data$intensity_ts[105:120]
+
+				effective_pers <- max(tda_res$max_persistence, 0.05)
+				scores <- as.numeric(raw_scores * effective_pers)
 			}
 
 			# Update Shared Memory Header & Particle Area

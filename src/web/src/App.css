@@ -1,7 +1,10 @@
+/* App.css の先頭に追加 */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Sans+JP:wght@400;700&display=swap');
+
 .app-container {
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
 	position: relative;
+	font-family: 'Noto Sans JP', 'Segoe UI', system-ui, 'Noto Color Emoji', sans-serif;
 }
-

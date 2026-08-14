@@ -49,13 +49,13 @@ extern "C" {
 
 typedef struct {
 	uint64_t magic_number;
-	uint64_t sequence_lock;
 	uint64_t write_index;
 	uint64_t read_index;
 	double re_lambda_max;
 	uint32_t state_flags;
 	uint32_t vector_count;
 	uint64_t last_updated_epoch;
+	uint64_t sequence_lock;
 	uint8_t reserved[72];
 } HeaderSection;
 

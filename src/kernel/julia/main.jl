@@ -37,11 +37,16 @@ function main()
 		println(" Skipped (waiting for live stream).")
 	end
 
+	last_run_time = 0.0
 	while true
 		hdr = SHMInterface.read_header(ctx)
+		current_time = time()
 
 		# Check STATE_FLAG_TDA_DISRUPTION (0x08)
-		if (hdr.state_flags & UInt32(0x08)) != 0
+		is_tda_triggered = (hdr.state_flags & UInt32(0x08)) != 0
+		is_timeout = (current_time - last_run_time) > 10.0
+
+		if is_tda_triggered || is_timeout
 			println("\n[TDA Disruption Triggered!] Re-identifying SINDy-PDE Governing Equations...")
 
 			ts = SHMInterface.read_timeseries(ctx, 120)
@@ -74,6 +79,7 @@ function main()
 				end
 
 				SHMInterface.reset_tda_flag_and_mark_sindy(ctx)
+				last_run_time = current_time
 			end
 		end
 		sleep(0.1)
