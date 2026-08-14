@@ -37,8 +37,7 @@ func (w *SharedMemoryWriter) WritePost(uri, author, text string, vector [128]flo
 
 
 	// 1. Atomic Index Increment
-	atomic.AddUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.sequence_lock)), 1)
-	writeIdx := atomic.LoadUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.write_index)))
+	writeIdx := atomic.AddUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.write_index)), 1)-1
 
 	// 2. Vector Ring Buffer Slot Write (~64MB Zone)
 	vSlotIdx := writeIdx % C.VECTOR_RING_CAPACITY
@@ -61,17 +60,14 @@ func (w *SharedMemoryWriter) WritePost(uri, author, text string, vector [128]flo
 	copyCString(unsafe.Pointer(&tSlot.text[0]), text, C.TEXT_BODY_MAX_LEN)
 
 	atomic.StoreUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.last_updated_epoch)), nowNs)
-	atomic.StoreUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.write_index)), writeIdx + 1)
-	atomic.AddUint64((*uint64)(unsafe.Pointer(&w.shmPtr.header.sequence_lock)), 1)
 
 	return writeIdx
 }
 
 func copyCString(dst unsafe.Pointer, src string, maxLen int) {
-	bytes := []byte(src)
-	if len(bytes) >= maxLen {
-		bytes = bytes[:maxLen - 1]
-	}
+	safeSrc := safeTruncateUTF8(src, maxLen-1)
+	bytes := []byte(safeSrc)
+
 	dstBuf := (*[1 << 30]byte)(dst)[:maxLen:maxLen]
 	copy(dstBuf, bytes)
 	dstBuf[len(bytes)] = 0

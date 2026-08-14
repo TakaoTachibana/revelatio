@@ -101,9 +101,12 @@ public unsafe class CytoplasmReader : IDisposable {
 		if (len == 0) {
 			return string.Empty;
 		}
+		
+		var bytes = new byte[len];
+		Marshal.Copy((IntPtr)ptr, bytes, 0, len);
 
 		string result = Encoding.UTF8.GetString(ptr, len);
-		return result.TrimEnd('\0', ' ', '\r', '\n', '\t');
+		return result.Replace("\uFFFD", "").TrimEnd('\0', ' ', '\r', '\n', '\t');
 	}
 
 	public void Dispose() {

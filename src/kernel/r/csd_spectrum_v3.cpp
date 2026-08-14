@@ -108,6 +108,8 @@ void update_shm_state_and_particles_cpp(SEXP xp, int flags, double re_lambda, In
 		shm->particle_output.trigger_slot_indices[i] = static_cast<uint32_t>(trigger_slots[i]);
 		shm->particle_output.scores[i] = scores[i];
 	}
+
+	shm->particle_output.calculated_at_ns = static_cast<uint64_t>(std::time(NULL));
 }
 
 // [[Rcpp::export]]
